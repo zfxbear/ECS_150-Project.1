@@ -1,4 +1,4 @@
-all: exec
+all: sshell
 
 example: sshell.c
 	
