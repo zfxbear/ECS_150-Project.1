@@ -103,7 +103,7 @@ int pipecommand(int left, int right){
 
 		if (pipe_exist < right){
 			close(fds[1]);
-			dup2(fds[0], STDIN_FILENO;
+			dup2(fds[0], STDIN_FILENO);
 			close(fds[0]);
 			result = pipecommand(pipe_exist+1, right);
 		}
