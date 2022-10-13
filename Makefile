@@ -1,9 +1,9 @@
-all: sshell_123
+all: exec
 
 example: sshell.c
 	
-		gcc -g -Wall -Wextra -Werror -o sshell_123 sshell_123.c
+		gcc -g -Wall -Wextra -Werror sshell.c -o sshell
 
 clean:
 	
-		rm -f sshell_123
+		rm -f sshell
