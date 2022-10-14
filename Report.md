@@ -7,5 +7,7 @@ This program `sschell.c`, can Execution of user-supplied commands with optional 
 
 ## Implementation
 1.Using `fgets` to get the command input
+
 2.check command input is regular command or builtin command
+
 3.
