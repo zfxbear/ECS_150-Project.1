@@ -82,7 +82,7 @@ Changed from `system()` to `fork()`,`exec()`, and `wait()`. This is where the pa
 Create a function that checks a given command to see if it has a redirect symbol, and create a file that provides space for the output.
 
 ## Error management
-
+Creat a error functions, Put all the running errors in it. The error is identified using the `switch`, and after everythign runs done then put it back in the main function and display the error's name.
 
 ## Summary
 It's important to understand how the `shell` is implemented, and it also means that there's a lot of space for `shell` improvement. Adding functionality to the `shell` in the right way can make it a superior system tool.
