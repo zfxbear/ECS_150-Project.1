@@ -76,4 +76,4 @@ In `callCommand` using `fork()`to detects whether a subroutine is running, If `p
 In `pipeCommand`.`left` represents the leftmost string, `right` represents the rightmost string. If `|` was encountered while reading the string will exist a `pipe = i`. `i` stands for the first pipe encountered.
 
 ## fork(), exec() and wait()
-Changed from `system()` to `fork()`,`exec()`, and `wait()`. This is where the parent and child processes can be obtained using the method of bifurcation parameters. The parent process will wait for the child process to perform the execvp function judgment.
+Changed from `system()` to `fork()`,`exec()`, and `wait()`. This is where the parent and child processes can be obtained using the method of bifurcation parameters. The parent process will wait for the child process to perform the `execvp` function judgment.
