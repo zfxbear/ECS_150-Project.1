@@ -82,6 +82,34 @@ Changed from `system()` to `fork()`,`exec()`, and `wait()`. This is where the pa
 Create a function that checks a given command to see if it has a redirect symbol, and create a file that provides space for the output.
 
 ## Error management
+```c
+switch (result){
+								case ERROR_FORK:
+									fprintf(stderr, "Error fork\n");
+									break;
+								case ERROR_MISSING_COMMAND:
+									fprintf(stderr, "Error: missing command\n");
+									break;
+                            	case ERROR_NOINPUT:
+									fprintf(stderr, "Error: no input file\n");
+									break;
+								case ERROR_NOOUTPUT:
+									fprintf(stderr, "Error: no output file\n");
+									break;
+                            	case ERROR_NOINPUT_FILE:
+									fprintf(stderr, "Error: cannot open input file\n");
+									break;
+                            	case ERROR_NOOUTPUT_FILE:
+									fprintf(stderr, "Error: cannot open output file\n");
+									break;
+                            	case ERROR_MISCON_INPUT:
+									fprintf(stderr, "Error: mislocated input redirection");
+									break;
+                            	case ERROR_MISCON_OUTPUT:
+									fprintf(stderr, "Error: mislocated output redirection");
+									break;
+                            }
+```
 Creat a error functions, Put all the running errors in it. The error is identified using the `switch`, and after everythign runs done then put it back in the main function and display the error's name.
 
 ## Summary
