@@ -40,4 +40,4 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
         }
     }
 ```
-In `pipeCommand`
+In `pipeCommand`.`left` represents the leftmost string, `right` represents the rightmost string. If `|` was encountered while reading the string. 
