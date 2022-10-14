@@ -268,6 +268,3 @@ int main(void)
 
         return EXIT_SUCCESS;
 }
-
-
-sshell1.c
