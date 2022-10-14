@@ -27,3 +27,17 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
 ```
         
 `callCommand` using `fork()`to detects whether a subroutine is running, If not it will run `pipeCommand`.
+```c
+    int pipecommand(int left, int right){
+    int result = 0;
+    int pipe_exist = -1;
+    int pipe_count = 0;
+    for (int i = left; i < right; i++){
+        if (strcmp(command[i], "|") == 0){
+            pipe_exist = i;
+            pipe_count++;
+            break;
+        }
+    }
+```
+In `pipeCommand`
