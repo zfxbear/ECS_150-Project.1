@@ -18,7 +18,32 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
 
 6.Using the `fork()`,`exec()`and `wait` to display the output
 
-## callCommand, splitCommand and pipeCommand
+## splitCommand, callCommand and pipeCommand
+```c
+    int splitcommand(char tmpcmd[CMDLINE_MAX]){
+        int splitnum = 0;
+        int len = strlen(tmpcmd);
+        int i , j;
+        for (i = 0, j = 0; i < len; i++){
+            if (tmpcmd[i] != ' '){
+                command[splitnum][j++] = tmpcmd[i];
+            } else {
+                if (j != 0){
+                    command[splitnum][j] = '\0';
+                    splitnum++;
+                    j = 0;
+                }
+            }
+        }
+        if (j != 0){
+            command[splitnum][j] = '\0';
+            splitnum++;
+        }
+        return splitnum;
+    }
+```
+In `splitCommand` uses `tmpcmd()` to put the characters that are automatically separated when a space is encountered into `callCommands`'s character group.
+
 ```c 
     int callcommand(int commandnum){
     pid_t pid = fork();
@@ -49,27 +74,3 @@ In `callCommand` using `fork()`to detects whether a subroutine is running, If no
     }
 ```
 In `pipeCommand`.`left` represents the leftmost string, `right` represents the rightmost string. If `|` was encountered while reading the string. 
-```c
-    int splitcommand(char tmpcmd[CMDLINE_MAX]){
-        int splitnum = 0;
-        int len = strlen(tmpcmd);
-        int i , j;
-        for (i = 0, j = 0; i < len; i++){
-            if (tmpcmd[i] != ' '){
-                command[splitnum][j++] = tmpcmd[i];
-            } else {
-                if (j != 0){
-                    command[splitnum][j] = '\0';
-                    splitnum++;
-                    j = 0;
-                }
-            }
-        }
-        if (j != 0){
-            command[splitnum][j] = '\0';
-            splitnum++;
-        }
-        return splitnum;
-    }
-```
-In `splitCommand`,
