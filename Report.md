@@ -80,15 +80,14 @@ Changed from `system()` to `fork()`,`exec()`, and `wait()`. This is where the pa
 
 ## Redirection
 ```c
- if (nl)
-            *nl = '\0';
-
-        //Before determing the type of the command line, we need to parse
-        // the command line first, then check if it's valid and follows all
-        // the specified rules in the prompt
-        struct CMD_LINE CMD;
-        CMD = piping_check(CMD, cmd);
-        CMD = redirection_check(CMD, cmd);
+         if (in_num == 1){
+			int fp = open(inFILE, O_RDONLY);
+            dup2(fp, STDIN_FILENO);
+        }
+        if (out_num == 1){
+			int fp = open(outFILE, O_CREAT|O_WRONLY|O_TRUNC, 0777);
+            dup2(fp, STDOUT_FILENO);
+        }
 ```
 Create a function that checks a given command to see if it has a redirect symbol, and create a file that provides space for the output.
 
