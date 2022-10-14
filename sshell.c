@@ -1,78 +1,308 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include<errno.h>
 #include <unistd.h>
-#include<fcntl.h>
-#include<sys/wait.h>gezac
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 
 #define CMDLINE_MAX 512
-#define ENVPATH "/bin/"
-char command[CMDLINE_MAX][CMDLINE_MAX];
-void clearCommand()
-{
-	int i = 0;
-	for(i = 0; i < CMDLINE_MAX; i++)
-		memset(command[i],'\0',CMDLINE_MAX);
 
-}
+char command[CMDLINE_MAX][CMDLINE_MAX];
+int pipe_exist = -1;
+int pipe_exit_result[3];
+int pipe_count = 0;
+int pushd_exist = -1;
+char orginal_path[CMDLINE_MAX];
+char push_path[CMDLINE_MAX];
+
+int pipecommand(int left, int right);
+int redirectioncommand(int left, int right);
+
+/* This is the error management*/
+enum {
+	NORMAL_RESULT, // normal result
+	ERROR_FORK, // when fork is error
+	ERROR_MISSING_COMMAND, // when the command is missing
+	ERROR_NOINPUT, // there is no input file 
+	ERROR_NOOUTPUT, // there is no output file
+	ERROR_NOINPUT_FILE, // input file is not exist
+	ERROR_NOOUTPUT_FILE, // output file is not exist
+	ERROR_MISCON_INPUT, // have the redirection input and the pipe
+	ERROR_MISCON_OUTPUT // have the redirection output and the pipe
+
+};
+
 int splitcommand(char tmpcmd[CMDLINE_MAX]){
-	int splitnum = 0;
-	int len = strlen(tmpcmd);
-	int i , j;
-	for (i = 0, j = 0; i < len; i++){
-		if (tmpcmd[i] != ' '){
-			command[splitnum][j++] = tmpcmd[i];
+    int splitnum = 0;
+    int len = strlen(tmpcmd);
+    int i , j;
+	/* in for loop when it have ' ' we are split the command between them*/
+    for (i = 0, j = 0; i < len; i++){
+        if (tmpcmd[i] != ' '){
+            command[splitnum][j++] = tmpcmd[i];
+        } else {
+            if (j != 0){
+                command[splitnum][j] = '\0';
+                splitnum++;
+                j = 0;
+            }
+        }
+    }
+    if (j != 0){
+        command[splitnum][j] = '\0';
+        splitnum++;
+    }
+    return splitnum;
+}
+
+/* This is the function that we get the current pwd*/
+void pwd(){
+    char pwdstring[CMDLINE_MAX];
+    getcwd(pwdstring,sizeof(pwdstring));
+    fprintf(stderr,"%s\n",pwdstring);
+}
+
+/* cd function is to change the dirctory when we use cd command */
+int cd(int commandnum){
+    if (chdir(command[1]) >= 0){
+        return 0;
+    }else {
+        fprintf(stderr,"Error: cannot cd into directory\n");
+        return 1;
+    }
+}
+
+/* This is the main command for the regular command*/
+int callcommand(int commandnum){
+    pid_t pid = fork();
+	/* This is the children process */
+    if (pid == 0){
+        exit( pipecommand(0, commandnum));
+    } else if(pid > 0){
+	/* when there is a parent process we wait to the children process */
+        int status;
+        waitpid(pid, &status, 0);
+		pipe_exit_result[pipe_count] = WEXITSTATUS(status);
+		return WEXITSTATUS(status);
+    } else {
+        return ERROR_FORK; //The fork has error
+    }
+}
+
+/* This is the pipefunciton that can know there is a pipe or not */
+int pipecommand(int left, int right){
+    int result = 0;
+    /* We define that no pipe exist is -1 */
+    int pipe_exist = -1;
+    /* find the piep */
+    for (int i = left; i < right; i++){
+	/* we know the pipe when there is a '|' in  */
+        if (strcmp(command[i], "|") == 0){
+	    /* put the poisition in command[] in the pipe_exist */
+            pipe_exist = i;
+            ++pipe_count;
+            break;
+        }
+    }
+
+	/* When there is no pipe */
+    if (pipe_exist == -1){
+        return redirectioncommand(left, right);
+    } else if (pipe_exist+1 == right){ 
+	/* There is no command after '|' pipe */
+        return ERROR_MISSING_COMMAND; //ERROR_MISSING_COMMAND
+    }
+
+    int fds[2];
+    pipe(fds);
+    pid_t pid = fork();
+    if (pid < 0){
+        result = ERROR_FORK;
+    } else if (pid == 0){ 
+	/* child process the single command */
+        close(fds[0]);
+        dup2(fds[1], STDOUT_FILENO);
+        close(fds[1]);
+	/* we go to redirectioncommnad to check the redireciton command */
+        result = redirectioncommand(left, pipe_exist);
+        exit(result);
+    } else { 
+	/* parent precess the rest of command */
+        int status;
+        waitpid(pid, &status, 0);
+		/* put the exit value in the exit result arrey */
+		pipe_exit_result[pipe_count] = WEXITSTATUS(status);
+		return WEXITSTATUS(status);
+
+	/* keep doing the command since the pipe is not the end of the command*/
+        if (pipe_exist < right){
+            close(fds[1]);
+            dup2(fds[0], STDIN_FILENO);
+            close(fds[0]);
+            result = pipecommand(pipe_exist+1, right);
+        }
+    }
+    return result;
+}
+
+/* This is the redirectioncammand to check the redirection no pipe in 
+and left is the begin of the command or the after the '|'
+and right is the end of the command or the before of the next '|' */
+int redirectioncommand(int left, int right){
+    char *inFILE = NULL, *outFILE = NULL;
+    int in_num = 0, out_num = 0;
+    int end = right;
+
+    /*  we check is there have the redirection */
+    for (int i = left; i < right; i++){
+        if (strcmp(command[i], "<") == 0){
+            in_num++;
+            if (i+1 < right){
+                inFILE = command[i+1];
+            } else {
+		/* There's no files after '<' */
+                return ERROR_NOINPUT; 
+            }
+            if (end == right){
+                end = i;
+            }
+        } else if (strcmp(command[i], ">") == 0){
+            out_num++;
+            if (i+1 < right){
+                outFILE = command[i+1];
+            } else {
+		/* There's no command after '>' */
+                return ERROR_NOOUTPUT;
+            }
+            if (end == right){
+                end = i;
+            }
+        }
+    }
+
+	/* the input file is not exist or cannot find  */
+    if (in_num == 1){
+        int fp = open(inFILE, O_RDONLY);
+        if (fp < 0){
+            return ERROR_NOINPUT_FILE;
+        }
+    } else if (out_num == 1){
+	/* the output file is not exist or cannot fidn */
+        int fp = open(outFILE, O_CREAT|O_WRONLY|O_TRUNC, 0777);
+        if (fp < 0){
+            return ERROR_NOOUTPUT_FILE;
+        }
+    }
+
+	/* When the input or output cammand has more than one '> ' or '<' */
+    if (in_num > 1){
+        return ERROR_NOINPUT;
+    } else if (out_num > 1){
+        return ERROR_NOOUTPUT;
+    }
+
+	/* To check is there have the redirection command with pipe command */
+    if (in_num == 1 && pipe_exist != -1){
+        return ERROR_MISCON_INPUT;
+    } else if (out_num == 1 && pipe_exist != -1){
+        return ERROR_MISCON_OUTPUT;
+    }
+
+    int result = 0;
+    pid_t pid = fork();
+    if (pid < 0){
+        result = ERROR_FORK;
+    } else if (pid == 0){
+	/* We are doing the redirection input and output */
+        if (in_num == 1){
+	    int fp = open(inFILE, O_RDONLY);
+            dup2(fp, STDIN_FILENO);
+        }
+        if (out_num == 1){
+            int fp = open(outFILE, O_CREAT|O_WRONLY|O_TRUNC, 0777);
+            dup2(fp, STDOUT_FILENO);
+        }
+
+	/* execv the command  */
+	/* we have a mock command to set with pointer(*) */
+        char* mockcommand[CMDLINE_MAX];
+        for (int i = left; i < end; i++){
+            mockcommand[i] = command[i];
+        }
+        mockcommand[end] = NULL;
+        int retval = execvp(mockcommand[left],mockcommand+left);
+	/* To check the command is missing or not */
+        if (retval != 0){
+            return ERROR_MISSING_COMMAND;
+            //exit(1);
+        }
+    } else {
+        int status;
+        waitpid(pid, &status, 0);
+        return WEXITSTATUS(status);
+    }
+
+	return result;
+}
+
+/* This is the directory command*/
+int directory (int commandnum){
+	int result = 0;
+	/* we remember the orginal path */
+	if (pushd_exist == -1){
+		getcwd(orginal_path,sizeof(orginal_path));
+	}
+
+	/* We set the pushd command and mark push exist */
+	if (strcmp(command[0],"pushd") == 0){
+		pushd_exist = 0;
+		if (chdir(command[1]) >= 0){
+			getcwd(push_path,sizeof(push_path));
+			return 0;
+		}else {
+			fprintf(stderr,"Error: no such directory\n");
+			return 1;
+		}
+	} else if (strcmp(command[0],"dirs") == 0){
+		/* To print the dirs all pwd in push and orginal */
+		if (pushd_exist == 0){
+			fprintf(stderr,"%s\n",push_path);
+			fprintf(stderr,"%s\n",orginal_path);
+			return 0;
 		} else {
-			if (j != 0){
-				command[splitnum][j] = '\0';
-				splitnum++;
-				j = 0;
-			}
+			fprintf(stderr,"%s\n",orginal_path);
+			return 0;
+		}
+	}else if (strcmp(command[0],"popd") == 0){
+		/* error when there is no dirctory pushd */
+		if (pushd_exist == -1){
+			fprintf(stderr,"Error: directory stack empty\n");
+			return 1;
+		} else {
+			/* we pop the dir when we have the push dictory  */
+			chdir(orginal_path);
+			pushd_exist = -1;
+			return 0;
 		}
 	}
-	if (j != 0){
-		command[splitnum][j] = '\0';
-		splitnum++;
-	}
-	return splitnum;
+
+	return result;
 }
 
 
-void pwd(){
-	char pwdstring[CMDLINE_MAX];
-	getcwd(pwdstring,sizeof(pwdstring));
-	printf("%s\n",pwdstring);
-}
-
-int cd(int commandnum){
-	if (chdir(command[1]) >= 0){
-		return 0;
-	}else {
-		printf("Error: cannot cd into directory\n");
-		return 1;
-	}
-}
-
-void clearbuf()
-{
-	char ch;
-	while((ch = getchar())!=EOF&&ch !='\n');
-}
 int main(void)
 {
         char cmd[CMDLINE_MAX];
-        while(1)
-	{
-		memset(cmd,'\0',CMDLINE_MAX);
-		clearCommand();
-		char *nl;
-                int retval;
-		
+
+        while (1) {
+                char *nl;
+		int result;
+
                 /* Print prompt */
-                printf("sshell@ucd$ ");
+                printf("sshell@ucd@$ ");
                 fflush(stdout);
-		//clearbuf();
+
                 /* Get command line */
                 fgets(cmd, CMDLINE_MAX, stdin);
 
@@ -84,152 +314,71 @@ int main(void)
 
                 /* Remove trailing newline from command line */
                 nl = strchr(cmd, '\n');
-                if (nl)*nl = '\0';
+                if (nl)
+                        *nl = '\0';
 
-		/* Split Command and count */
-		int commandnum = splitcommand(cmd);
-		int fd[2];
-		if(pipe(fd) < 0)
-		{
-			printf("pipe create fail\n");
-			return 0;
-		}	
-		int pid;
-		char *mcmd[255]={NULL};
-		int i = 0;
-		int flag = 0;
-		int j = 0;
-		while(command[i][0]!='\0')
-		{
-			if(strcmp("|",command[i])==0 || strcmp(">",command[i])==0 || strcmp(">>",command[i])==0)
-			{
-				
-				if(strcmp("|",command[i])==0)
-					flag = 1;
-				if(strcmp(">",command[i])==0)
-					flag = 2;
-				if(strcmp(">>",command[i])==0)
-					flag = 3;
-				i+=1;
-				while(command[i][0]!='\0')
-				{
-					mcmd[j++] = command[i];
-					i++;
-				}	
-				mcmd[j]=NULL;
-			}
-			i++;
-		}				
-		//parents process
-		if((pid = fork()) > 0)
-		{
-			wait(NULL);
-			if(flag != 0)
-			{
-				close(fd[1]);
-				close(STDIN_FILENO);
-				dup(fd[0]);
-				char pathname[255]="";
-				strcpy(pathname,ENVPATH);
-				strcat(pathname,mcmd[0]);
-				if(flag == 1)
-				{
-					if(execv(pathname,mcmd) < 0)
-					{
-						fprintf(stderr,"Parent:%s\n",strerror(errno));
-						exit(0);	
-					}
-				}
-				char buf[1024]="";
-				read(fd[0],buf,1024);
-				if(flag == 2)
-				{
-					int fp = open(mcmd[0],O_RDWR|O_CREAT|O_TRUNC,0777);
-					if(fp < 0)
-					{
-						fprintf(stderr,"open fail\n");
-						return 0;	
-					}
-					write(fp,buf,1024);			
-					break;
-				}
-				if(flag == 3)
-				{
-					int fp = open(mcmd[0],O_RDWR|O_CREAT|O_APPEND,0777);
-					if(fp < 0)
-					{
-						fprintf(stderr,"open fail\n");
-						return 0;	
-					}
-					write(fp,buf,1024);
-					break;
-				}
-			}			
-		}
-		else if(pid == 0)//child process
-		{
-                	/* Builtin command */
-			if (commandnum != 0)
-			{
-				if (strcmp(command[0], "exit") == 0) 
-				{
-				//	fprintf(stderr, "Bye...\n");
-				//	fprintf(stderr, "+ completed 'exit' [0]\n");
-					exit(0);
-				}
-				if (strcmp(command[0],"pwd") == 0)
-				{
-					pwd();
-					fprintf(stderr, "+ completed 'pwd' [0]\n");	
-				} 
-				else if (strcmp(command[0],"cd") == 0)
-				{
-					int result = cd(commandnum);
-					fprintf(stderr, "+ completed '%s' [%d]\n", cmd, result);
-				}
-				else//recall
-				{
-					if(flag != 0)
-					{
-						close(fd[0]);
-						close(STDOUT_FILENO);
-						dup(fd[1]);
-					}
-					char* scmd[255] ={NULL};
-					int i = 0,j = 0;
-					while(command[i][0] != '\0')
-					{
-						if(strcmp(command[i],"|")==0 || strcmp(command[i],">")==0 || strcmp(command[i],">>")==0)
-						{
-							scmd[i] == NULL;
-							break;
-						}
-						scmd[i] = command[i];
-						i++;
-					}
-					scmd[i+1] = NULL;
-					char pathname[255] = "";
-					strcpy(pathname,ENVPATH);
-					strcat(pathname,scmd[0]);
-					if(execv(pathname,scmd)<0)
-					{
-						fprintf(stderr,"child:error:%s\n",strerror(errno));
-						exit(0);
-					}
-				}
+                /* Split Command and count */
+                int commandnum = splitcommand(cmd);
 
-			}
-		}	
-		if (strcmp(command[0], "exit") == 0) 
-		{
-			fprintf(stderr, "Bye...\n");
-			fprintf(stderr, "+ completed 'exit' [0]\n");
-			exit(0);
-		}
+                /* Builtin command */
+                if (commandnum != 0){
+		    /* exit command */
+                    if (strcmp(command[0], "exit") == 0) {
+                            fprintf(stderr, "Bye...\n");
+                            fprintf(stderr, "+ completed 'exit' [0]\n");
+                            exit(0);
+		    /* pwd command */
+                    } else if (strcmp(command[0],"pwd") == 0){
+                            pwd();
+                            fprintf(stderr, "+ completed 'pwd' [0]\n");
+	            /* cd command */
+                    } else if (strcmp(command[0],"cd") == 0){
+                            int result = cd(commandnum);
+                            fprintf(stderr, "+ completed '%s' [%d]\n", cmd, result);
+		    /* dirs, pushd ,popd command */
+                    } else if (strcmp (command[0],"dirs") == 0 || strcmp(command[0],"pushd") == 0 || strcmp(command[0],"popd") == 0) {
+			    int result = directory(commandnum);
+			    fprintf(stderr, "+ completed '%s' [%d]\n", cmd, result);
+		    } else {
+		    /* other regular command and the print the error informaiton */
+                            result = callcommand(commandnum);
+                            switch (result){
+			    case ERROR_FORK:
+				    fprintf(stderr, "Error fork\n");
+				    break;
+			    case ERROR_MISSING_COMMAND:
+				    fprintf(stderr, "Error: missing command\n");
+				    break;
+                            case ERROR_NOINPUT:
+				    fprintf(stderr, "Error: no input file\n");
+				    break;
+			    case ERROR_NOOUTPUT:
+				    fprintf(stderr, "Error: no output file\n");
+				    break;
+                            case ERROR_NOINPUT_FILE:
+				    fprintf(stderr, "Error: cannot open input file\n");
+				    break;
+                            case ERROR_NOOUTPUT_FILE:
+				    fprintf(stderr, "Error: cannot open output file\n");
+				    break;
+                            case ERROR_MISCON_INPUT:
+				    fprintf(stderr, "Error: mislocated input redirection");
+				    break;
+                            case ERROR_MISCON_OUTPUT:
+				    fprintf(stderr, "Error: mislocated output redirection");
+				    break;
+                      }
+                      fprintf(stderr, "+ completed '%s' ", cmd);
+		      for (int i = 0; i < pipe_count; ++i){
+			    fprintf(stderr, "[%d]", pipe_exit_result[i]);
+		      }
+		      fprintf(stderr, "\n");
+                      }
+                }
 
         }
+
         return EXIT_SUCCESS;
 }
-
 
 
