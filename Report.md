@@ -59,7 +59,7 @@ In `splitCommand` uses `tmpcmd()` to put the characters that are automatically s
 }
 ```
         
-In `callCommand` using `fork()`to detects whether a subroutine is running, If not it will run `pipeCommand`.
+In `callCommand` using `fork()`to detects whether a subroutine is running, If `pid` > 0 will run the subroutine directly, or `pid` = 0 will run to `pipeCommand`, else will display `Error`.
 ```c
     int pipecommand(int left, int right){
     int result = 0;
