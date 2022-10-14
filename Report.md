@@ -79,6 +79,17 @@ In `pipeCommand`.`left` represents the leftmost string, `right` represents the r
 Changed from `system()` to `fork()`,`exec()`, and `wait()`. This is where the parent and child processes can be obtained using the method of bifurcation parameters. The parent process will wait for the child process to perform the `execvp` function judgment.
 
 ## Redirection
+```c
+ if (nl)
+            *nl = '\0';
+
+        //Before determing the type of the command line, we need to parse
+        // the command line first, then check if it's valid and follows all
+        // the specified rules in the prompt
+        struct CMD_LINE CMD;
+        CMD = piping_check(CMD, cmd);
+        CMD = redirection_check(CMD, cmd);
+```
 Create a function that checks a given command to see if it has a redirect symbol, and create a file that provides space for the output.
 
 ## Error management
