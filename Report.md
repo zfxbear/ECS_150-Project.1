@@ -73,4 +73,4 @@ In `callCommand` using `fork()`to detects whether a subroutine is running, If `p
         }
     }
 ```
-In `pipeCommand`.`left` represents the leftmost string, `right` represents the rightmost string. If `|` was encountered while reading the string. 
+In `pipeCommand`.`left` represents the leftmost string, `right` represents the rightmost string. If `|` was encountered while reading the string will exist a `pipe = i`. `i` stands for the first pipe encountered.
