@@ -3,7 +3,7 @@
 ### HanChen Yu & QiJun Liang
 
 ## Summary
-This program `sschell.c`, can Execution of user-supplied commands with optional arguments, Selection of typical builtin commands, Redirection of the standard output of commands to files and Composition of commands via piping. 
+This program `sschell.c`is a command-line interpreter. It takes input from the user in the form of a command line and executes them, which means support for output and input redirection and pipelining commands.
 
 ## Implementation
 1.Using `fgets` to get the command input
