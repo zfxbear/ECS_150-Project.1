@@ -123,7 +123,7 @@ switch (result){
 Creat a error functions, Put all the running errors in it. The error is identified using the `switch`, and after everythign runs done then put it back in the main function and display the error's name.
 
 ## Directory
-The directory stack dirs remembers the directories of all `poshd`, `pushd`can change the current directory stack, and `popd` will expel the current directory stack if no `error` is displayed.
+The directory stack `dirs` remembers the directories of all `poshd`, `pushd`can change the current directory stack, and `popd` will expel the current directory stack if no `error` is displayed.
 
 ## Summary
 It's important to understand how the `shell` is implemented, and it also means that there's a lot of space for `shell` improvement. Adding functionality to the `shell` in the right way can make it a superior system tool.
