@@ -77,3 +77,12 @@ In `pipeCommand`.`left` represents the leftmost string, `right` represents the r
 
 ## fork(), exec() and wait()
 Changed from `system()` to `fork()`,`exec()`, and `wait()`. This is where the parent and child processes can be obtained using the method of bifurcation parameters. The parent process will wait for the child process to perform the `execvp` function judgment.
+
+## Redirection
+Create a function that checks a given command to see if it has a redirect symbol, and create a file that provides space for the output.
+
+## Error management
+
+
+## Summary
+It's important to understand how the `shell` is implemented, and it also means that there's a lot of space for `shell` improvement. Adding functionality to the `shell` in the right way can make it a superior system tool.
