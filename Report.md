@@ -18,7 +18,7 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
 
 6.Using the `fork()`,`exec()`and `wait` to display the output
 
-## CallCommand, SplitCommand and PipeCommand
+## callCommand, splitCommand and pipeCommand
 ```c 
     int callcommand(int commandnum){
       pid_t pid = fork();
@@ -26,4 +26,4 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
         exit( pipecommand(0, commandnum));
 ```
         
-`callCommand` using `fork()`to detects whether a subroutine is running
+`callCommand` using `fork()`to detects whether a subroutine is running, If not it will run `pipeCommand`.
