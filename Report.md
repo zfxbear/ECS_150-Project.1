@@ -17,3 +17,5 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
 5.Parse the string to select the commands, arguments and redirection
 
 6.Using the `fork()`,`exec()`and `wait` to display the output
+
+## `Splitcommand`, `Pioecommand`
