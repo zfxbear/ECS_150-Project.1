@@ -34,7 +34,7 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
 }
 ```
         
-`callCommand` using `fork()`to detects whether a subroutine is running, If not it will run `pipeCommand`.
+In `callCommand` using `fork()`to detects whether a subroutine is running, If not it will run `pipeCommand`.
 ```c
     int pipecommand(int left, int right){
     int result = 0;
@@ -72,3 +72,4 @@ In `pipeCommand`.`left` represents the leftmost string, `right` represents the r
         return splitnum;
     }
 ```
+In `splitCommand`,
