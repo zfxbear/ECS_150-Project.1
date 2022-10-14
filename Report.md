@@ -49,3 +49,26 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
     }
 ```
 In `pipeCommand`.`left` represents the leftmost string, `right` represents the rightmost string. If `|` was encountered while reading the string. 
+```c
+    int splitcommand(char tmpcmd[CMDLINE_MAX]){
+        int splitnum = 0;
+        int len = strlen(tmpcmd);
+        int i , j;
+        for (i = 0, j = 0; i < len; i++){
+            if (tmpcmd[i] != ' '){
+                command[splitnum][j++] = tmpcmd[i];
+            } else {
+                if (j != 0){
+                    command[splitnum][j] = '\0';
+                    splitnum++;
+                    j = 0;
+                }
+            }
+        }
+        if (j != 0){
+            command[splitnum][j] = '\0';
+            splitnum++;
+        }
+        return splitnum;
+    }
+```
