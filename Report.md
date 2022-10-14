@@ -18,7 +18,7 @@ This program `sschell.c`is a command-line interpreter. It takes input from the u
 
 6.Using the `fork()`,`exec()`and `wait` to display the output
 
-## CallCommandm, SplitCommand and PipeCommand
+## CallCommand, SplitCommand and PipeCommand
 ```c 
     int callcommand(int commandnum){
       pid_t pid = fork();
