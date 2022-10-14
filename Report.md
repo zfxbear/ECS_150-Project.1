@@ -8,6 +8,12 @@ This program `sschell.c`, can Execution of user-supplied commands with optional 
 ## Implementation
 1.Using `fgets` to get the command input
 
-2.check command input is regular command or builtin command
+2.Check command input is regular command or builtin command
 
-3.
+3.Check whitespaces
+
+4.Parse `pipe` and `redirect`
+
+5.Parse the string to select the commands, arguments and redirection
+
+6.Using the `fork()`,`exec()`and `wait` to display the output
